@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-mdui-loaded="true">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MDChat</title>
+    <!-- MDUI CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mdui@1.0.2/dist/css/mdui.min.css">
+    <!-- Pace.js 加载动画 CSS -->
+    <link href="https://file.catp.cc/bar.css" rel="stylesheet">
+    <!-- Pace.js 脚本 -->
+    <script src="https://cdn.jsdelivr.net/npm/pace-js@latest/pace.min.js"></script>
+    <style>
+        body {
+            background-color: #f5f5f5;
+        }
+        .mdui-container {
+            max-width: 800px;
+            margin-top: 20px;
+        }
+        .password-card {
+            margin-top: 100px;
+        }
+        .comment-section {
+            margin-top: 40px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .comment-section.show {
+            opacity: 1;
+        }
+        /* 调整Waline容器样式 */
+        #waline {
+            background-color: #fff;
+            border-radius: 4px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        }
+    </style>
+</head>
+<body class="mdui-theme-primary-blue mdui-theme-accent-light-blue">
+    <div class="mdui-container">
+        <!-- 应用栏 -->
+        <div class="mdui-appbar">
+            <div class="mdui-toolbar mdui-color-theme">
+                <a href="javascript:;" class="mdui-typo-headline">MDChat</a>
+                <div class="mdui-toolbar-spacer"></div>
+                <a href="javascript:;" class="mdui-btn mdui-btn-icon"><i class="mdui-icon material-icons">search</i></a>
+            </div>
+        </div>
+
+        <!-- 密码输入卡片 -->
+        <div id="passwordForm" class="mdui-card password-card">
+            <div class="mdui-card-primary">
+                <div class="mdui-card-primary-title">密码验证</div>
+                <div class="mdui-card-primary-subtitle">请输入密码</div>
+            </div>
+            <div class="mdui-card-content">
+                <div class="mdui-textfield mdui-textfield-floating-label">
+                    <label class="mdui-textfield-label">访问密码</label>
+                    <input id="passwordInput" class="mdui-textfield-input" type="password"/>
+                </div>
+                <p id="errorMsg" class="mdui-text-color-red" style="display: none;">
+                    <i class="mdui-icon material-icons">error</i> 密码错误，请重试
+                </p>
+            </div>
+            <div class="mdui-card-actions">
+                <button onclick="checkPassword()" class="mdui-btn mdui-ripple mdui-color-theme-accent">
+                    <i class="mdui-icon material-icons">lock_open</i> 提交
+                </button>
+            </div>
+        </div>
+
+        <!-- 评论区域（初始隐藏） -->
+        <div id="commentSection" class="comment-section">
+            <div class="mdui-typo">
+                <h2 class="mdui-text-color-theme-text">评论 <small>请文明发言</small></h2>
+            </div>
+            <!-- Waline 评论系统 -->
+            <div id="waline"></div>
+        </div>
+    </div>
+
+    <!-- MDUI JS -->
+    <script src="https://cdn.jsdelivr.net/npm/mdui@1.0.2/dist/js/mdui.min.js"></script>
+    <script>
+        // 设置密码（实际应用中应该使用更安全的方式）
+        const CORRECT_PASSWORD = "woshishabi1234";
+        let walineLoaded = false;
+        
+        function checkPassword() {
+            const input = document.getElementById('passwordInput').value;
+            const errorMsg = document.getElementById('errorMsg');
+            
+            if (input === CORRECT_PASSWORD) {
+                // 隐藏密码表单
+                new mdui.Document().getElementById('passwordForm').style.display = 'none';
+                
+                // 显示评论区域
+                const commentSection = new mdui.Document().getElementById('commentSection');
+                commentSection.classList.add('show');
+                
+                // 加载Waline
+                if (!walineLoaded) {
+                    loadWaline();
+                    walineLoaded = true;
+                }
+            } else {
+                // 显示错误提示
+                errorMsg.style.display = 'block';
+                // 抖动动画
+                const card = new mdui.Document().getElementById('passwordForm');
+                card.classList.add('mdui-shake');
+                setTimeout(() => {
+                    card.classList.remove('mdui-shake');
+                }, 500);
+            }
+        }
+        
+        // 密码输入框回车事件
+        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+        
+        function loadWaline() {
+            // 显示加载进度条
+            Pace.restart();
+            
+            // 动态加载 Waline CSS
+            const walineCSS = document.createElement('link');
+            walineCSS.rel = 'stylesheet';
+            walineCSS.href = 'https://cdn.jsdelivr.net/npm/@waline/client@v2/dist/waline.css';
+            document.head.appendChild(walineCSS);
+            
+            // 动态加载 Waline 评论系统
+            const walineScript = document.createElement('script');
+            walineScript.src = "https://cdn.jsdelivr.net/npm/@waline/client@v2/dist/waline.js";
+            document.body.appendChild(walineScript);
+            
+            walineScript.onload = function() {
+                Waline.init({
+                    el: '#waline',
+                    serverURL: 'https://your-waline-server-url.com', // 替换为你的 Waline 服务地址
+                    path: window.location.pathname,
+                    dark: 'html[data-theme="dark"]',
+                    login: 'enable',
+                    pageview: true,
+                    emoji: [
+                        'https://cdn.jsdelivr.net/gh/walinejs/emojis@1.0.0/weibo',
+                        'https://cdn.jsdelivr.net/gh/walinejs/emojis@1.0.0/qq',
+                    ],
+                    // MDUI 风格的评论框
+                    meta: ['nick', 'mail', 'link'],
+                    requiredMeta: ['nick'],
+                    wordLimit: 1000,
+                    imageUploader: false,
+                    search: false,
+                });
+                
+                // 隐藏加载进度条
+                Pace.stop();
+            };
+        }
+        
+        // 初始化MDUI组件
+        mdui.mutation();
+    </script>
+</body>
+</html>
