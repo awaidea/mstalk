@@ -6,6 +6,8 @@
     <title>MDChat</title>
     <!-- MDUI CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mdui@1.0.2/dist/css/mdui.min.css">
+    <!-- Waline CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@waline/client@v2/dist/waline.css">
     <!-- Pace.js 加载动画 CSS -->
     <link href="https://file.catp.cc/bar.css" rel="stylesheet">
     <!-- Pace.js 脚本 -->
@@ -74,7 +76,7 @@
         <!-- 评论区域（初始隐藏） -->
         <div id="commentSection" class="comment-section">
             <div class="mdui-typo">
-                <h2 class="mdui-text-color-theme-text">评论 <small>请文明发言</small></h2>
+                <h2 class="mdui-text-color-theme-text">Chat <small>A simple html chat program.</small></h2>
             </div>
             <!-- Waline 评论系统 -->
             <div id="waline"></div>
@@ -83,10 +85,12 @@
 
     <!-- MDUI JS -->
     <script src="https://cdn.jsdelivr.net/npm/mdui@1.0.2/dist/js/mdui.min.js"></script>
+    <!-- Waline JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@waline/client@v2/dist/waline.js"></script>
     <script>
         // 设置密码（实际应用中应该使用更安全的方式）
         const CORRECT_PASSWORD = "woshishabi1234";
-        let walineLoaded = false;
+        let walineInstance = null;
         
         function checkPassword() {
             const input = document.getElementById('passwordInput').value;
@@ -94,22 +98,21 @@
             
             if (input === CORRECT_PASSWORD) {
                 // 隐藏密码表单
-                new mdui.Document().getElementById('passwordForm').style.display = 'none';
+                document.getElementById('passwordForm').style.display = 'none';
                 
                 // 显示评论区域
-                const commentSection = new mdui.Document().getElementById('commentSection');
+                const commentSection = document.getElementById('commentSection');
                 commentSection.classList.add('show');
                 
-                // 加载Waline
-                if (!walineLoaded) {
-                    loadWaline();
-                    walineLoaded = true;
+                // 初始化Waline
+                if (!walineInstance) {
+                    initWaline();
                 }
             } else {
                 // 显示错误提示
                 errorMsg.style.display = 'block';
                 // 抖动动画
-                const card = new mdui.Document().getElementById('passwordForm');
+                const card = document.getElementById('passwordForm');
                 card.classList.add('mdui-shake');
                 setTimeout(() => {
                     card.classList.remove('mdui-shake');
@@ -124,44 +127,31 @@
             }
         });
         
-        function loadWaline() {
+        function initWaline() {
             // 显示加载进度条
             Pace.restart();
             
-            // 动态加载 Waline CSS
-            const walineCSS = document.createElement('link');
-            walineCSS.rel = 'stylesheet';
-            walineCSS.href = 'https://cdn.jsdelivr.net/npm/@waline/client@v2/dist/waline.css';
-            document.head.appendChild(walineCSS);
+            walineInstance = Waline.init({
+                el: '#waline',
+                serverURL: 'https://wcm.catp.cc', // 替换为你的 Waline 服务地址
+                path: window.location.pathname,
+                dark: 'html[data-theme="dark"]',
+                login: 'enable',
+                pageview: true,
+                emoji: [
+                    'https://cdn.jsdelivr.net/gh/walinejs/emojis@1.0.0/weibo',
+                    'https://cdn.jsdelivr.net/gh/walinejs/emojis@1.0.0/qq',
+                ],
+                // MDUI 风格的评论框
+                meta: ['nick', 'mail', 'link'],
+                requiredMeta: ['nick'],
+                wordLimit: 1000,
+                imageUploader: false,
+                search: false,
+            });
             
-            // 动态加载 Waline 评论系统
-            const walineScript = document.createElement('script');
-            walineScript.src = "https://cdn.jsdelivr.net/npm/@waline/client@v2/dist/waline.js";
-            document.body.appendChild(walineScript);
-            
-            walineScript.onload = function() {
-                Waline.init({
-                    el: '#waline',
-                    serverURL: 'https://your-waline-server-url.com', // 替换为你的 Waline 服务地址
-                    path: window.location.pathname,
-                    dark: 'html[data-theme="dark"]',
-                    login: 'enable',
-                    pageview: true,
-                    emoji: [
-                        'https://cdn.jsdelivr.net/gh/walinejs/emojis@1.0.0/weibo',
-                        'https://cdn.jsdelivr.net/gh/walinejs/emojis@1.0.0/qq',
-                    ],
-                    // MDUI 风格的评论框
-                    meta: ['nick', 'mail', 'link'],
-                    requiredMeta: ['nick'],
-                    wordLimit: 1000,
-                    imageUploader: false,
-                    search: false,
-                });
-                
-                // 隐藏加载进度条
-                Pace.stop();
-            };
+            // 隐藏加载进度条
+            Pace.stop();
         }
         
         // 初始化MDUI组件
